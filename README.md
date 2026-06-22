@@ -19,7 +19,8 @@ qbot/
   constants.py        Shared QBot constants
   state.py            Dataclasses for command, state, camera, and LIDAR data
   kinematics.py       Differential-drive math
-  mover.py            Main user-facing QBotMover shell
+  limits.py           Command limit helpers
+  mover.py            Main user-facing QBotMover API
 
 backends/
   base_backend.py          Abstract backend interface
@@ -33,6 +34,10 @@ sensors/
   realsense_direct.py  Direct pyrealsense2 wrapper placeholder
   opencv_camera.py     OpenCV camera fallback placeholder
 
+checks/
+  kinematics_check.py
+  mock_backend_check.py
+
 examples/
   drive_forward.py
   turn_in_place.py
@@ -40,6 +45,7 @@ examples/
   sensor_preview.py
 
 docs/
+  ATTACK_PLAN.md
   IMPLEMENTATION_PLAN.md
 ```
 
@@ -61,14 +67,27 @@ export QBOT_MODE=physical
 export QBOT_MODE=mock
 ```
 
+## Current executable checks
+
+These checks do not require Quanser, QLabs, ROS, or physical hardware.
+
+```powershell
+py -3.12 checks/kinematics_check.py
+py -3.12 checks/mock_backend_check.py
+```
+
+## Current stop point
+
+The repo is ready up to the mock/backend architecture stage. The next major step is virtual QLabs testing, which Erick will run. Development should stop at that handoff until QLabs results are known.
+
 ## Development direction
 
-First target:
+1. Keep mock-mode movement stable.
+2. Prepare virtual backend handoff.
+3. Erick tests QLabs virtual behavior.
+4. Use Erick's QLabs result to implement or correct `VirtualQLabsBackend`.
+5. Test Quanser CSI and LIDAR on a test branch.
+6. Compare RealSense direct SDK against Quanser RealSense.
+7. Only then work on physical movement.
 
-1. Implement the mock backend.
-2. Implement virtual QLabs movement.
-3. Test Quanser CSI and LIDAR on a test branch.
-4. Compare RealSense direct SDK against Quanser RealSense.
-5. Only then work on physical movement.
-
-See [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md).
+See [`docs/ATTACK_PLAN.md`](docs/ATTACK_PLAN.md).
