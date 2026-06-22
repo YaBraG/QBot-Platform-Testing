@@ -15,79 +15,54 @@ Pure Python project for testing and building a clean API around the Quanser QBot
 
 ```text
 qbot/
-  environment.py      Runtime mode detection: virtual, physical, or mock
-  constants.py        Shared QBot constants
-  state.py            Dataclasses for command, state, camera, and LIDAR data
-  kinematics.py       Differential-drive math
-  limits.py           Command limit helpers
-  mover.py            Main user-facing QBotMover API
+  environment.py
+  constants.py
+  state.py
+  kinematics.py
+  limits.py
+  mover.py
 
 backends/
-  base_backend.py          Abstract backend interface
-  mock_backend.py          Pure Python development backend
-  virtual_qlabs_backend.py QLabs/QVL backend placeholder
-  physical_qbot_backend.py Physical QBot backend placeholder
+  base_backend.py
+  mock_backend.py
+  virtual_qlabs_backend.py
+  physical_qbot_backend.py
 
 sensors/
-  quanser_csi.py       Quanser CSI wrapper placeholder
-  quanser_lidar.py     Quanser LIDAR wrapper placeholder
-  realsense_direct.py  Direct pyrealsense2 wrapper placeholder
-  opencv_camera.py     OpenCV camera fallback placeholder
+  quanser_csi.py
+  quanser_lidar.py
+  realsense_direct.py
+  opencv_camera.py
 
 checks/
   kinematics_check.py
   mock_backend_check.py
-
-examples/
-  drive_forward.py
-  turn_in_place.py
-  drive_square.py
-  sensor_preview.py
+  virtual_qlabs_check.py
 
 docs/
   ATTACK_PLAN.md
   IMPLEMENTATION_PLAN.md
 ```
 
-## Runtime mode override
+## Current checks
 
-The project will use `QBOT_MODE` to force a mode when needed:
-
-```powershell
-$env:QBOT_MODE="virtual"
-$env:QBOT_MODE="physical"
-$env:QBOT_MODE="mock"
-```
-
-On Linux:
-
-```bash
-export QBOT_MODE=virtual
-export QBOT_MODE=physical
-export QBOT_MODE=mock
-```
-
-## Current executable checks
-
-These checks do not require Quanser, QLabs, ROS, or physical hardware.
+Mock and math checks:
 
 ```powershell
-py -3.12 checks/kinematics_check.py
-py -3.12 checks/mock_backend_check.py
+py -3.12 -m checks.kinematics_check
+py -3.12 -m checks.mock_backend_check
+```
+
+Virtual QLabs handoff check:
+
+```powershell
+py -3.12 -m checks.virtual_qlabs_check --connect-only
+py -3.12 -m checks.virtual_qlabs_check --speed 0.05 --turn 0.0 --seconds 0.5
+py -3.12 -m checks.virtual_qlabs_check --speed 0.0 --turn 0.2 --seconds 0.5
 ```
 
 ## Current stop point
 
-The repo is ready up to the mock/backend architecture stage. The next major step is virtual QLabs testing, which Erick will run. Development should stop at that handoff until QLabs results are known.
-
-## Development direction
-
-1. Keep mock-mode movement stable.
-2. Prepare virtual backend handoff.
-3. Erick tests QLabs virtual behavior.
-4. Use Erick's QLabs result to implement or correct `VirtualQLabsBackend`.
-5. Test Quanser CSI and LIDAR on a test branch.
-6. Compare RealSense direct SDK against Quanser RealSense.
-7. Only then work on physical movement.
+The repo is ready for Erick to test the virtual QLabs handoff. Do not continue to physical movement until QLabs behavior is known.
 
 See [`docs/ATTACK_PLAN.md`](docs/ATTACK_PLAN.md).
