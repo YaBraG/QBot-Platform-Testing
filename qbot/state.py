@@ -7,7 +7,6 @@ from dataclasses import dataclass, field
 import numpy as np
 
 
-@dataclass
 class QBotCommand:
     """Command sent to a movement backend.
 
@@ -24,7 +23,6 @@ class QBotCommand:
     timestamp_s: float = 0.0
 
 
-@dataclass
 class QBotState:
     """State returned by a backend.
 
@@ -51,7 +49,6 @@ class QBotState:
     is_stale: bool = False
 
 
-@dataclass
 class LidarScan:
     """Simple LIDAR scan container.
 
@@ -66,7 +63,6 @@ class LidarScan:
     source: str = "unknown"
 
 
-@dataclass
 class CameraFrame:
     """Simple camera frame container.
 

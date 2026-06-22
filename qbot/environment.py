@@ -77,7 +77,4 @@ def selected_runtime_mode() -> str:
     if override in {MODE_PHYSICAL, MODE_VIRTUAL, MODE_MOCK}:
         return override
 
-    if is_physical_qbot():
-        return MODE_PHYSICAL
-
-    return MODE_VIRTUAL
+    return MODE_PHYSICAL if is_physical_qbot() else MODE_VIRTUAL
