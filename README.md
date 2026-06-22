@@ -42,6 +42,7 @@ checks/
 docs/
   ATTACK_PLAN.md
   IMPLEMENTATION_PLAN.md
+  VENDORED_QVL_PLAN.md
 ```
 
 ## Current checks
@@ -61,8 +62,14 @@ py -3.12 -m checks.virtual_qlabs_check --speed 0.05 --turn 0.0 --seconds 0.5
 py -3.12 -m checks.virtual_qlabs_check --speed 0.0 --turn 0.2 --seconds 0.5
 ```
 
+## Current QVL decision
+
+The preferred direction is to vendor only the useful QVL files inside this repository instead of requiring every user to clone the full Quanser Academic Resources repository.
+
+See [`docs/VENDORED_QVL_PLAN.md`](docs/VENDORED_QVL_PLAN.md).
+
 ## Current stop point
 
-The repo is ready for Erick to test the virtual QLabs handoff. Do not continue to physical movement until QLabs behavior is known.
+The next work item is vendoring the minimum QVL layer, then Erick can rerun the virtual QLabs handoff check. Do not continue to physical movement until QLabs behavior is known.
 
 See [`docs/ATTACK_PLAN.md`](docs/ATTACK_PLAN.md).
