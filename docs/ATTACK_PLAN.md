@@ -8,6 +8,10 @@ Move the QBot through one clean Python API, without ROS, while keeping Quanser c
 
 Core code goes on `main`. Experimental sensor tests stay on separate branches.
 
+## Team model
+
+I implement the core architecture and code up to the virtual-testing handoff. Erick runs the virtual QLabs tests and reports what works or fails. I do not assume QLabs behavior until that feedback exists.
+
 ## Sprint 1: Make the API executable
 
 Goal: prove that the architecture works without Quanser, QLabs, or physical hardware.
@@ -28,18 +32,29 @@ py -3.12 checks/kinematics_check.py
 py -3.12 checks/mock_backend_check.py
 ```
 
-## Sprint 2: Virtual QLabs movement
+## Sprint 2: Virtual QLabs handoff
 
-Goal: make `QBotMover(force_mode="virtual")` move the QLabs QBot.
+Goal: prepare the code so Erick can test QLabs movement from the clean API.
 
-Tasks:
+Tasks before handoff:
 
-- Implement lazy QLabs/QVL imports inside `VirtualQLabsBackend`.
-- Connect to QLabs.
-- Spawn or attach to actor 0.
-- Convert public left/right order into QVL order.
-- Convert QVL state tuple into `QBotState`.
-- Add `examples/drive_forward.py` using virtual mode first.
+- Keep `VirtualQLabsBackend` isolated from the rest of the code.
+- Keep all QLabs/QVL imports lazy inside the virtual backend.
+- Prepare the backend methods that need implementation.
+- Document the expected QLabs behavior to verify.
+
+Erick tests:
+
+- Whether QLabs imports work.
+- Whether QLabs connection works.
+- Whether actor 0 can be spawned or attached.
+- Whether wheel command order is correct.
+- Whether turn sign is correct.
+- Whether returned QLabs state is reliable enough.
+
+Stop point:
+
+- Do not continue past virtual execution until Erick reports QLabs results.
 
 Fallbacks:
 
