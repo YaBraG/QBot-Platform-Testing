@@ -65,3 +65,78 @@ class QuanserInteractiveLabs:
             self._stream.close()
         except Exception:
             pass
+
+    def send_container(self, container: CommModularContainer) -> bool:
+        try:
+            data = bytearray(struct.pack("<i", 1 + container.containerSize))
+            data += bytearray(struct.pack(">BiiiB", 123, container.containerSize, container.classID, container.actorNumber, container.actorFunction))
+            data += container.payload
+            count = self._stream.send_byte_array(data, len(data))
+            if count > 0:
+                self._stream.flush()
+                return True
+        except Exception:
+            return False
+        return False
+
+    def receive_new_data(self) -> bool:
+        count = self._stream.receive(self._readBuffer, self.BUFFER_SIZE)
+        while count > 0:
+            self._receivePacketBuffer += bytearray(self._readBuffer[0:count])
+            count = self._stream.receive(self._readBuffer, self.BUFFER_SIZE)
+        if len(self._receivePacketBuffer) <= 5:
+            return False
+        if self._receivePacketBuffer[4] != 123:
+            self._receivePacketBuffer = bytearray()
+            self._receivePacketContainerIndex = 0
+            return False
+        self._receivePacketSize, = struct.unpack("<I", self._receivePacketBuffer[0:4])
+        self._receivePacketSize += 4
+        if len(self._receivePacketBuffer) >= self._receivePacketSize:
+            self._receivePacketContainerIndex = 5
+            return True
+        return False
+
+    def get_next_container(self):
+        container = CommModularContainer()
+        more = False
+        index = self._receivePacketContainerIndex
+        if index > 0:
+            container.containerSize, = struct.unpack(">I", self._receivePacketBuffer[index:index + 4])
+            container.classID, = struct.unpack(">I", self._receivePacketBuffer[index + 4:index + 8])
+            container.actorNumber, = struct.unpack(">I", self._receivePacketBuffer[index + 8:index + 12])
+            container.actorFunction = self._receivePacketBuffer[index + 12]
+            start = index + container.BASE_CONTAINER_SIZE
+            end = index + container.containerSize
+            container.payload = bytearray(self._receivePacketBuffer[start:end])
+            self._receivePacketContainerIndex += container.containerSize
+            if self._receivePacketContainerIndex >= self._receivePacketSize:
+                if len(self._receivePacketBuffer) == self._receivePacketSize:
+                    self._receivePacketBuffer = bytearray()
+                else:
+                    self._receivePacketBuffer = self._receivePacketBuffer[self._receivePacketContainerIndex:]
+                self._receivePacketContainerIndex = 0
+            else:
+                more = True
+        return container, more
+
+    def wait_for_container(self, class_id: int, actor_number: int, function_number: int):
+        start_time = time.time()
+        while True:
+            while not self.receive_new_data():
+                if self._wait_for_container_timeout > 0:
+                    if time.time() - start_time >= self._wait_for_container_timeout:
+                        return None
+            more = True
+            while more:
+                container, more = self.get_next_container()
+                if container.classID == class_id and container.actorNumber == actor_number and container.actorFunction == function_number:
+                    return container
+
+    def flush_receive(self) -> None:
+        try:
+            self._stream.receive(self._readBuffer, self.BUFFER_SIZE)
+        except Exception:
+            pass
+        self._receivePacketBuffer = bytearray()
+        self._receivePacketContainerIndex = 0
