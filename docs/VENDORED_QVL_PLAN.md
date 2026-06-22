@@ -1,67 +1,74 @@
-# Vendored QVL Plan
+# Vendored Virtual Dependency Plan
 
 ## Decision
 
-We should not require every user to clone the full Quanser Academic Resources repository just to run this project.
+Do not require every user to clone the full Quanser Academic Resources repository just to run this project.
 
-Preferred direction:
+Current implementation:
 
-- Vendor only the QVL pieces we need.
-- Keep the vendored code isolated.
-- Preserve the Quanser BSD 3-Clause license notice.
-- Do not copy the entire Quanser repository.
-- Do not mix vendored QVL code into our own `qbot` API.
+- Minimum virtual dependency code lives under `virtual_dependencies/quanser_qvl/`.
+- A small `qvl/` compatibility package forwards imports to `virtual_dependencies/quanser_qvl/`.
+- This keeps the existing virtual backend import style working while the real code is local to this repo.
 
-## Why not copy everything?
-
-Copying the entire QVL folder would work faster at first, but it adds a lot of code we do not need and makes debugging harder.
-
-The QBot virtual layer mainly needs:
-
-- QLabs connection/container code.
-- Base actor spawn methods.
-- QBot Platform actor methods.
-- Optional QBot Platform flooring if we later build scenes.
-
-## Important limitation
-
-Vendoring QVL does not remove every Quanser dependency.
-
-The QLabs communication layer still depends on Quanser's communications package. That means the first vendored version may still require Quanser runtime libraries installed on the machine.
-
-## Target structure
+## Current structure
 
 ```text
-vendor/
+virtual_dependencies/
+  __init__.py
+  README.md
   quanser_qvl/
-    LICENSE.quanser
     __init__.py
     qlabs.py
     actor.py
     qbot_platform.py
-    qbot_platform_flooring.py
+
+qvl/
+  __init__.py
+  qlabs.py
+  actor.py
+  qbot_platform.py
 ```
 
-## Import rule
+## Still required externally
 
-Our backend should import from our vendored namespace first:
+Vendoring this layer does not replace the Quanser SDK.
 
-```python
-from vendor.quanser_qvl.qlabs import QuanserInteractiveLabs
-from vendor.quanser_qvl.qbot_platform import QLabsQBotPlatform
+The QLabs communication layer still requires:
+
+```text
+quanser.communications
+quanser.common
 ```
 
-Fallback to external `qvl` can remain temporarily during transition.
+## Current scope
 
-## Implementation order
+Included now:
 
-1. Add Quanser BSD 3-Clause license text under `vendor/quanser_qvl/LICENSE.quanser`.
-2. Add the minimum QVL files.
-3. Rename imports from `qvl.*` to `vendor.quanser_qvl.*` inside the vendored files.
-4. Update `VirtualQLabsBackend` to prefer vendored QVL.
-5. Keep a fallback import from external `qvl` until the vendored path is tested.
-6. Run virtual check again.
+- QLabs TCP connection and container send/receive basics.
+- Actor spawn by explicit actor number.
+- QBot Platform wheel command and state request.
 
-## Longer-term cleanup
+Not included yet:
 
-Later, if needed, replace the Quanser communications dependency with our own TCP client that speaks the same QLabs container protocol. Do not do this until the vendored QVL path works.
+- QVL camera image helper.
+- QVL LIDAR helper.
+- QBot Platform flooring actor.
+- Full QVL actor utilities.
+
+## Test command
+
+Run this first to verify imports:
+
+```powershell
+py -3.12 -m checks.virtual_dependency_check
+```
+
+Then run QLabs:
+
+```powershell
+py -3.12 -m checks.virtual_qlabs_check --connect-only
+```
+
+## License note
+
+The QVL-style code is based on the public Quanser Academic Resources QVL files. License review must remain on the task list before external redistribution.
