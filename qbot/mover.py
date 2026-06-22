@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import time
+
 from qbot.environment import MODE_MOCK, MODE_PHYSICAL, MODE_VIRTUAL, selected_runtime_mode
+from qbot.limits import clamp_body_velocity, clamp_wheel_speeds
 from qbot.state import QBotState
 
 
@@ -10,88 +13,76 @@ class QBotMover:
     """High-level QBot movement interface.
 
     User code should use this class instead of importing a backend directly.
-
-    TODO:
-    - Instantiate the correct backend based on selected_runtime_mode().
-    - Add force_mode support for virtual, physical, and mock.
-    - Add drive_forward, turn_degrees, stop, and close helpers.
-    - Keep physical movement safe by requiring timeouts or stop conditions.
     """
 
     def __init__(self, force_mode: str | None = None) -> None:
         self.mode = force_mode or selected_runtime_mode()
-        self.backend = None
-
-        # TODO: Import backend classes lazily here so Quanser imports are isolated.
-        # if self.mode == MODE_VIRTUAL:
-        #     from backends.virtual_qlabs_backend import VirtualQLabsBackend
-        #     self.backend = VirtualQLabsBackend()
-        # elif self.mode == MODE_PHYSICAL:
-        #     from backends.physical_qbot_backend import PhysicalQBotBackend
-        #     self.backend = PhysicalQBotBackend()
-        # elif self.mode == MODE_MOCK:
-        #     from backends.mock_backend import MockBackend
-        #     self.backend = MockBackend()
 
         if self.mode not in {MODE_VIRTUAL, MODE_PHYSICAL, MODE_MOCK}:
             raise ValueError(f"Unsupported QBot mode: {self.mode}")
 
+        self.backend = self._create_backend(self.mode)
+
+    def _create_backend(self, mode: str):
+        """Create the selected backend with lazy imports."""
+
+        if mode == MODE_MOCK:
+            from backends.mock_backend import MockBackend
+
+            return MockBackend()
+
+        if mode == MODE_VIRTUAL:
+            from backends.virtual_qlabs_backend import VirtualQLabsBackend
+
+            return VirtualQLabsBackend()
+
+        if mode == MODE_PHYSICAL:
+            from backends.physical_qbot_backend import PhysicalQBotBackend
+
+            return PhysicalQBotBackend()
+
+        raise ValueError(f"Unsupported QBot mode: {mode}")
+
     def connect(self) -> None:
-        """Connect to the selected backend.
+        """Connect to the selected backend."""
 
-        TODO:
-        - Delegate to backend.connect().
-        - Raise a helpful error if no backend is loaded yet.
-        """
-
-        raise NotImplementedError
+        self.backend.connect()
 
     def set_body_velocity(self, forward_mps: float, turn_radps: float) -> None:
-        """Command forward and turning speed.
+        """Command forward and turning speed after clamping."""
 
-        TODO:
-        - Validate speed limits.
-        - Delegate to backend.set_body_velocity().
-        """
-
-        raise NotImplementedError
+        limited_forward, limited_turn = clamp_body_velocity(forward_mps, turn_radps)
+        self.backend.set_body_velocity(limited_forward, limited_turn)
 
     def set_wheel_speeds(self, left_mps: float, right_mps: float) -> None:
-        """Command left and right wheel speeds.
+        """Command left and right wheel speeds after clamping."""
 
-        TODO:
-        - Keep public order as left, right.
-        - Let the virtual backend convert to Quanser's expected order.
-        """
+        limited_left, limited_right = clamp_wheel_speeds(left_mps, right_mps)
+        self.backend.set_wheel_speeds(limited_left, limited_right)
 
-        raise NotImplementedError
+    def drive_for_seconds(self, forward_mps: float, turn_radps: float, seconds: float) -> None:
+        """Drive for a fixed duration, then stop."""
+
+        if seconds < 0:
+            raise ValueError("seconds must be non-negative")
+
+        self.set_body_velocity(forward_mps, turn_radps)
+        try:
+            time.sleep(seconds)
+        finally:
+            self.stop()
 
     def read_state(self) -> QBotState:
-        """Return latest QBot state.
+        """Return latest QBot state."""
 
-        TODO:
-        - Delegate to backend.read_state().
-        - Return QBotState with source field filled.
-        """
-
-        raise NotImplementedError
+        return self.backend.read_state()
 
     def stop(self) -> None:
-        """Stop QBot movement.
+        """Stop QBot movement."""
 
-        TODO:
-        - Always call this in finally blocks in physical examples.
-        - Delegate to backend.stop().
-        """
-
-        raise NotImplementedError
+        self.backend.stop()
 
     def close(self) -> None:
-        """Close backend resources.
+        """Close backend resources."""
 
-        TODO:
-        - Stop first, then close connections.
-        - Make repeated close calls safe.
-        """
-
-        raise NotImplementedError
+        self.backend.close()
